@@ -27,3 +27,6 @@ def generate_data_file(abc_folder, out_file, out_folder=''):
         for abc in abc_files:
             with open(abc, 'r') as f_in:
                 f_out.write(f_in.read())
+
+    print(f'Found {len(abc_files)} .abc files')
+    print(f'Saved as {os.path.join(out_folder, out_file)}')
