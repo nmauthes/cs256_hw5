@@ -14,13 +14,17 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras.layers import LSTM
 from keras.optimizers import RMSprop
-from keras.utils.data_utils import get_file
 import numpy as np
 import random
 import sys
 
-path = get_file('nietzsche.txt', origin='https://s3.amazonaws.com/text-datasets/nietzsche.txt')
-text = open(path).read().lower()
+from abc_utils import generate_data_file
+
+TRAINING_FILE = 'data.txt'
+
+generate_data_file('nottingham_database', TRAINING_FILE)
+
+text = open(TRAINING_FILE).read()
 print('corpus length:', len(text))
 
 chars = sorted(list(set(text)))
@@ -85,7 +89,7 @@ for iteration in range(1, 60):
         generated = ''
         sentence = text[start_index: start_index + maxlen]
         generated += sentence
-        print('----- Generating with seed: "' + sentence + '"')
+        print('----- Generating with seed: "' + 'X' + '"')
         sys.stdout.write(generated)
 
         for i in range(400):
