@@ -35,13 +35,11 @@ def sample(preds, temperature=1.0):
 
 
 def main(args):
+    # Load the data
     generate_data_file(args.training_folder, args.training_file)
-
     text = open(args.training_file).read()
-    print('corpus length:', len(text))
 
     chars = sorted(list(set(text)))
-    print('total chars:', len(chars))
     char_indices = dict((c, i) for i, c in enumerate(chars))
     indices_char = dict((i, c) for i, c in enumerate(chars))
 
@@ -53,9 +51,7 @@ def main(args):
     for i in range(0, len(text) - maxlen, step):
         sentences.append(text[i: i + maxlen])
         next_chars.append(text[i + maxlen])
-    print('nb sequences:', len(sentences))
 
-    print('Vectorization...')
     x = np.zeros((len(sentences), maxlen, len(chars)), dtype=np.bool)
     y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
     for i, sentence in enumerate(sentences):
@@ -63,10 +59,11 @@ def main(args):
             x[i, t, char_indices[char]] = 1
         y[i, char_indices[next_chars[i]]] = 1
 
-    # build the model: a single LSTM
-    print('Build model...')
+    # Load the model, or build a new one
     if os.path.isfile(args.model_name):
         model = load_model(args.model_name)
+    elif args.mode == 'generate':
+        raise Exception('MODEL FILE NOT FOUND!')
     else:
         model = Sequential()
         model.add(LSTM(128, input_shape=(maxlen, len(chars))))
@@ -80,23 +77,24 @@ def main(args):
 
     # train the model, output generated text after each iteration
     for iteration in range(args.num_epochs):
-        print()
-        print('-' * 50)
-        print('Iteration', iteration)
-        model.fit(x, y,
-                  batch_size=128,
-                  epochs=1)
-
-        start_index = random.randint(0, len(text) - maxlen - 1)
-
-        for diversity in [0.2, 0.5, 1.0, 1.2]:
+        if args.mode == 'train':
             print()
-            print('----- diversity:', diversity)
+            print('-' * 50)
+            print('Iteration', iteration)
+            model.fit(x, y,
+                      batch_size=128,
+                      epochs=1)
+
+        if args.mode == 'generate' or args.generate_while_training:
+            start_index = random.randint(0, len(text) - maxlen - 1)
+
+            print()
+            print('----- diversity:', args.diversity)
 
             generated = ''
             sentence = text[start_index: start_index + maxlen]
             generated += sentence
-            print('----- Generating with seed: "' + 'X' + '"')
+            print('----- Generating with seed: "' + sentence + '"')
             sys.stdout.write(generated)
 
             for i in range(400):
@@ -105,7 +103,7 @@ def main(args):
                     x_pred[0, t, char_indices[char]] = 1.
 
                 preds = model.predict(x_pred, verbose=0)[0]
-                next_index = sample(preds, diversity)
+                next_index = sample(preds, args.diversity)
                 next_char = indices_char[next_index]
 
                 generated += next_char
@@ -115,8 +113,11 @@ def main(args):
                 sys.stdout.flush()
             print()
 
-    # save model
-    model.save(args.model_name)
+            if args.mode == 'generate':
+                break
+
+    if args.mode == 'train': # save model
+        model.save(args.model_name)
 
 
 # Command-line args
@@ -138,6 +139,7 @@ parser.add_argument(
 )
 parser.add_argument(
     'mode',
+    choices=['train', 'generate'],
     help='Train a new model or use a saved model to generate [train | generate]'
 )
 parser.add_argument(
@@ -156,6 +158,12 @@ parser.add_argument(
     '--training_file',
     default='data.txt',
     help='The name of the .txt consisting of concatenated .abc\'s that will be used for training. Default \'data.txt\'.'
+)
+parser.add_argument(
+    '--generate_while_training',
+    action='store_true',
+    default=False,
+    help='Whether to generate output after each epoch during training. Default is True.'
 )
 
 if __name__ == '__main__':
