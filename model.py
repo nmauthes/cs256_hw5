@@ -10,7 +10,8 @@ If you try this script on new data, make sure your corpus
 has at least ~100k characters. ~1M is better.
 '''
 
-from keras.models import Sequential
+import os
+from keras.models import Sequential, load_model
 from keras.layers import Dense, Activation
 from keras.layers import LSTM
 from keras.optimizers import RMSprop
@@ -21,6 +22,8 @@ import sys
 from abc_utils import generate_data_file
 
 TRAINING_FILE = 'data.txt'
+ITERATION_COUNT = 3
+model_name = 'model.h5'
 
 generate_data_file('nottingham_database', TRAINING_FILE)
 
@@ -53,10 +56,13 @@ for i, sentence in enumerate(sentences):
 
 # build the model: a single LSTM
 print('Build model...')
-model = Sequential()
-model.add(LSTM(128, input_shape=(maxlen, len(chars))))
-model.add(Dense(len(chars)))
-model.add(Activation('softmax'))
+if os.path.isfile(model_name):
+    model = load_model(model_name)
+else:
+    model = Sequential()
+    model.add(LSTM(128, input_shape=(maxlen, len(chars))))
+    model.add(Dense(len(chars)))
+    model.add(Activation('softmax'))
 
 optimizer = RMSprop(lr=0.01)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer)
@@ -72,7 +78,7 @@ def sample(preds, temperature=1.0):
     return np.argmax(probas)
 
 # train the model, output generated text after each iteration
-for iteration in range(1, 60):
+for iteration in range(ITERATION_COUNT):
     print()
     print('-' * 50)
     print('Iteration', iteration)
@@ -107,3 +113,7 @@ for iteration in range(1, 60):
             sys.stdout.write(next_char)
             sys.stdout.flush()
         print()
+
+# save model
+model.save(model_name)
+
