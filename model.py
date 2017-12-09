@@ -13,7 +13,7 @@ has at least ~100k characters. ~1M is better.
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Activation
 from keras.layers import LSTM
-from keras.optimizers import RMSprop
+from keras.optimizers import RMSprop, SGD
 
 import numpy as np
 import random
@@ -69,7 +69,7 @@ def main(args):
         model.add(Dense(len(chars)))
         model.add(Activation('softmax'))
 
-    optimizer = RMSprop(lr=0.01)
+    optimizer = SGD(lr=0.01, momentum=0.6)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer)
 
     ###################################################################
