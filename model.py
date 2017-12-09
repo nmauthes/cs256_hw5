@@ -17,7 +17,6 @@ from keras.optimizers import RMSprop
 
 import numpy as np
 import random
-import sys
 import os
 import argparse
 
@@ -75,29 +74,42 @@ def main(args):
 
     ###################################################################
 
+    if(args.mode == 'train'):
+        print('Training...')
+    else:
+        print('Generating...')
+
+    out_name = f'{args.model_name}_{args.diversity}_{args.mode}.abc'
+    generate = True if args.mode == 'generate' or args.generate_while_training else False
+
+    if generate:
+        # Save the output to file
+        if not os.path.exists(args.out_folder):
+            try:
+                os.makedirs(args.out_folder)
+            except OSError:
+                raise
+
+        out_file = open(os.path.join(args.out_folder, out_name), 'w')
+
     # train the model, output generated text after each iteration
-    for iteration in range(args.num_epochs):
+    for iteration in range(args.num_iterations):
+        print(f'Iteration {iteration + 1}/{args.num_iterations}')
+
         if args.mode == 'train':
-            print()
-            print('-' * 50)
-            print('Iteration', iteration)
             model.fit(x, y,
                       batch_size=128,
                       epochs=1)
 
-        if args.mode == 'generate' or args.generate_while_training:
+        if generate:
             start_index = random.randint(0, len(text) - maxlen - 1)
 
-            print()
-            print('----- diversity:', args.diversity)
-
             generated = ''
-            sentence = text[start_index: start_index + maxlen]
+            sentence = text[start_index: start_index + maxlen] # this is the seed
             generated += sentence
-            print('----- Generating with seed: "' + sentence + '"')
-            sys.stdout.write(generated)
+            out_file.write(generated)
 
-            for i in range(400):
+            for i in range(500):
                 x_pred = np.zeros((1, maxlen, len(chars)))
                 for t, char in enumerate(sentence):
                     x_pred[0, t, char_indices[char]] = 1.
@@ -109,12 +121,11 @@ def main(args):
                 generated += next_char
                 sentence = sentence[1:] + next_char
 
-                sys.stdout.write(next_char)
-                sys.stdout.flush()
-            print()
+                out_file.write(next_char)
 
-            if args.mode == 'generate':
-                break
+    if generate:
+        print(f'Saved file as {out_name}')
+        out_file.close()
 
     if args.mode == 'train': # save model
         model.save(args.model_name)
@@ -130,12 +141,12 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     'diversity',
     type=float,
-    help='The temperature of the model (degree of randomness in generated text) [0.0, inf)'
+    help='The temperature of the model (degree of randomness in generated text), typically a float from 0 to 1'
 )
 parser.add_argument(
-    'num_epochs',
+    'num_iterations',
     type=int,
-    help='The number of epochs (iterations) to run the model [0, inf)'
+    help='If mode=\'train\' this is number of epochs to train. If mode=\'generate\' this is number of times to generate'
 )
 parser.add_argument(
     'mode',
@@ -164,6 +175,11 @@ parser.add_argument(
     action='store_true',
     default=False,
     help='Whether to generate output after each epoch during training. Default is True.'
+)
+parser.add_argument(
+    '--out_folder',
+    default='output',
+    help='The path to the folder where output will be stored. Default is \'output\'.'
 )
 
 if __name__ == '__main__':

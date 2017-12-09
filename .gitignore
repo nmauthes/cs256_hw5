@@ -48,6 +48,8 @@ tmtagsHistory
 # Project folders & files #
 # #################
 data.txt
+*.h5
+/output
 
 # Dev-specific settings #
 # #################
