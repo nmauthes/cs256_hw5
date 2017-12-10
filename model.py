@@ -93,7 +93,6 @@ def main(args):
             sentence = text[start_index: start_index + maxlen] # random seed
             #sentence = text[0: maxlen] # seed with first maxlen chars
             generated += sentence
-            out_file.write(generated)
 
             for i in range(500):
                 x_pred = np.zeros((1, maxlen, len(chars)))
