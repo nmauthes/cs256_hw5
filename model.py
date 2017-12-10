@@ -54,7 +54,7 @@ def main(args):
         model.add(Dense(len(chars)))
         model.add(Activation('softmax'))
 
-    optimizer = SGD(lr=0.1, momentum=0.6)
+    optimizer = SGD(lr=0.01, momentum=0.6)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer)
 
     ###################################################################
