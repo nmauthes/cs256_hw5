@@ -107,8 +107,8 @@ def main(args):
                 next_index = sample(preds, args.diversity)
                 next_char = indices_char[next_index]
 
-                # if next_char == HEADER[0]: # If header is predicted, stop generating
-                #     break
+                if STOP_AT_HEADER and next_char == HEADER[0]: # If header is predicted, stop generating
+                    break
 
                 generated += next_char
                 sentence = sentence[1:] + next_char
