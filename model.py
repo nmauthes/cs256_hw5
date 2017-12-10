@@ -18,7 +18,7 @@ from abc_utils import generate_data_file
 from abc_utils import HEADER
 
 
-STOP_AT_HEADER = False # If True when the header is predicted, stop generating
+STOP_AT_HEADER = True # If True when the header is predicted, stop generating
 
 
 def main(args):
@@ -98,7 +98,7 @@ def main(args):
             sentence = HEADER # seed with header
             generated += sentence
 
-            for i in range(1500):
+            for i in range(750):
                 x_pred = np.zeros((1, maxlen, len(chars)))
                 for t, char in enumerate(sentence):
                     x_pred[0, t, char_indices[char]] = 1.
@@ -114,6 +114,8 @@ def main(args):
                 sentence = sentence[1:] + next_char
 
                 out_file.write(next_char)
+
+            out_file.write('\n\n')
 
     if generate:
         print(f'Saved file as {out_name}')
