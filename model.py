@@ -15,11 +15,15 @@ import os
 import argparse
 
 from abc_utils import generate_data_file
+from abc_utils import HEADER
+
+
+STOP_AT_HEADER = False # If True when the header is predicted, stop generating
 
 
 def main(args):
     # Load the data
-    generate_data_file(args.training_folder, args.training_file)
+    generate_data_file(args.training_folder, args.training_file, add_headers=True)
     text = open(args.training_file).read()
 
     chars = sorted(list(set(text)))
@@ -64,7 +68,7 @@ def main(args):
     else:
         print('Generating...')
 
-    out_name = f'{args.model_name}_{args.diversity}_{args.mode}.abc'
+    out_name = f'{os.path.splitext(args.model_name)[0]}_{args.diversity}_{args.mode}.abc'
     generate = True if args.mode == 'generate' or args.generate_while_training else False
 
     if generate:
@@ -90,11 +94,11 @@ def main(args):
             start_index = random.randint(0, len(text) - maxlen - 1)
 
             generated = ''
-            sentence = text[start_index: start_index + maxlen] # random seed
-            #sentence = text[0: maxlen] # seed with first maxlen chars
+            #sentence = text[start_index: start_index + maxlen] # random seed
+            sentence = HEADER # seed with header
             generated += sentence
 
-            for i in range(500):
+            for i in range(1500):
                 x_pred = np.zeros((1, maxlen, len(chars)))
                 for t, char in enumerate(sentence):
                     x_pred[0, t, char_indices[char]] = 1.
@@ -102,6 +106,9 @@ def main(args):
                 preds = model.predict(x_pred, verbose=0)[0]
                 next_index = sample(preds, args.diversity)
                 next_char = indices_char[next_index]
+
+                # if next_char == HEADER[0]: # If header is predicted, stop generating
+                #     break
 
                 generated += next_char
                 sentence = sentence[1:] + next_char
