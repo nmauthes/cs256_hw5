@@ -49,6 +49,7 @@ tmtagsHistory
 # #################
 data.txt
 *.h5
+!sgd_with_dropout.h5
 /output
 
 # Dev-specific settings #
