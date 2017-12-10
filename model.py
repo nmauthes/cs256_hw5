@@ -1,19 +1,13 @@
-'''Example script to generate text from Nietzsche's writings.
+'''
 
-At least 20 epochs are required before the generated text
-starts sounding coherent.
+A recurrent neural network with LSTM for generating music via text (.abc) files
 
-It is recommended to run this script on GPU, as recurrent
-networks are quite computationally intensive.
-
-If you try this script on new data, make sure your corpus
-has at least ~100k characters. ~1M is better.
 '''
 
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Activation
+from keras.layers import Dense, Activation, Dropout
 from keras.layers import LSTM
-from keras.optimizers import RMSprop, SGD
+from keras.optimizers import SGD
 
 import numpy as np
 import random
@@ -21,16 +15,6 @@ import os
 import argparse
 
 from abc_utils import generate_data_file
-
-
-def sample(preds, temperature=1.0):
-    # helper function to sample an index from a probability array
-    preds = np.asarray(preds).astype('float64')
-    preds = np.log(preds) / temperature
-    exp_preds = np.exp(preds)
-    preds = exp_preds / np.sum(exp_preds)
-    probas = np.random.multinomial(1, preds, 1)
-    return np.argmax(probas)
 
 
 def main(args):
@@ -66,10 +50,11 @@ def main(args):
     else:
         model = Sequential()
         model.add(LSTM(128, input_shape=(maxlen, len(chars))))
+        model.add(Dropout(0.2))
         model.add(Dense(len(chars)))
         model.add(Activation('softmax'))
 
-    optimizer = SGD(lr=0.01, momentum=0.6)
+    optimizer = SGD(lr=0.1, momentum=0.6)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer)
 
     ###################################################################
@@ -105,7 +90,8 @@ def main(args):
             start_index = random.randint(0, len(text) - maxlen - 1)
 
             generated = ''
-            sentence = text[start_index: start_index + maxlen] # this is the seed
+            sentence = text[start_index: start_index + maxlen] # random seed
+            #sentence = text[0: maxlen] # seed with first maxlen chars
             generated += sentence
             out_file.write(generated)
 
@@ -129,6 +115,16 @@ def main(args):
 
     if args.mode == 'train': # save model
         model.save(args.model_name)
+
+
+def sample(preds, temperature=1.0):
+    # helper function to sample an index from a probability array
+    preds = np.asarray(preds).astype('float64')
+    preds = np.log(preds) / temperature
+    exp_preds = np.exp(preds)
+    preds = exp_preds / np.sum(exp_preds)
+    probas = np.random.multinomial(1, preds, 1)
+    return np.argmax(probas)
 
 
 # Command-line args
