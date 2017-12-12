@@ -51,6 +51,7 @@ data.txt
 *.h5
 !sgd_with_dropout.h5
 /output
+/logs
 
 # Dev-specific settings #
 # #################

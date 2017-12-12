@@ -8,6 +8,7 @@ from keras.models import Sequential, load_model
 from keras.layers import Dense, Activation, Dropout
 from keras.layers import LSTM
 from keras.optimizers import SGD
+from keras.callbacks import TensorBoard
 
 import numpy as np
 import random
@@ -15,11 +16,15 @@ import os
 import argparse
 
 from abc_utils import generate_data_file
+from abc_utils import HEADER
+
+
+STOP_AT_HEADER = True # If True when the header is predicted, stop generating
 
 
 def main(args):
     # Load the data
-    generate_data_file(args.training_folder, args.training_file)
+    generate_data_file(args.training_folder, args.training_file, add_headers=True)
     text = open(args.training_file).read()
 
     chars = sorted(list(set(text)))
@@ -54,6 +59,11 @@ def main(args):
         model.add(Dense(len(chars)))
         model.add(Activation('softmax'))
 
+        tb = TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=128,
+                    write_graph=True, write_grads=False, write_images=False,
+                    embeddings_freq=0, embeddings_layer_names=None,
+                    embeddings_metadata=None)
+
     optimizer = SGD(lr=0.01, momentum=0.6)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer)
 
@@ -64,7 +74,7 @@ def main(args):
     else:
         print('Generating...')
 
-    out_name = f'{args.model_name}_{args.diversity}_{args.mode}.abc'
+    out_name = f'{os.path.splitext(args.model_name)[0]}_{args.diversity}_{args.mode}.abc'
     generate = True if args.mode == 'generate' or args.generate_while_training else False
 
     if generate:
@@ -84,17 +94,18 @@ def main(args):
         if args.mode == 'train':
             model.fit(x, y,
                       batch_size=128,
-                      epochs=1)
+                      epochs=1,
+                      callbacks=[tb])
 
         if generate:
             start_index = random.randint(0, len(text) - maxlen - 1)
 
             generated = ''
-            sentence = text[start_index: start_index + maxlen] # random seed
-            #sentence = text[0: maxlen] # seed with first maxlen chars
+            #sentence = text[start_index: start_index + maxlen] # random seed
+            sentence = HEADER # seed with header
             generated += sentence
 
-            for i in range(500):
+            for i in range(750):
                 x_pred = np.zeros((1, maxlen, len(chars)))
                 for t, char in enumerate(sentence):
                     x_pred[0, t, char_indices[char]] = 1.
@@ -103,10 +114,15 @@ def main(args):
                 next_index = sample(preds, args.diversity)
                 next_char = indices_char[next_index]
 
+                if STOP_AT_HEADER and next_char == HEADER[0]: # If header is predicted, stop generating
+                    break
+
                 generated += next_char
                 sentence = sentence[1:] + next_char
 
                 out_file.write(next_char)
+
+            out_file.write('\n\n')
 
     if generate:
         print(f'Saved file as {out_name}')
