@@ -49,7 +49,7 @@ tmtagsHistory
 # #################
 data.txt
 *.h5
-!sgd_with_dropout.h5
+!trained_model.h5
 /output
 /logs
 
