@@ -8,6 +8,7 @@ from keras.models import Sequential, load_model
 from keras.layers import Dense, Activation, Dropout
 from keras.layers import LSTM
 from keras.optimizers import SGD
+from keras.callbacks import TensorBoard
 
 import numpy as np
 import random
@@ -58,6 +59,11 @@ def main(args):
         model.add(Dense(len(chars)))
         model.add(Activation('softmax'))
 
+        tb = TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=128,
+                    write_graph=True, write_grads=False, write_images=False,
+                    embeddings_freq=0, embeddings_layer_names=None,
+                    embeddings_metadata=None)
+
     optimizer = SGD(lr=0.01, momentum=0.6)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer)
 
@@ -88,7 +94,8 @@ def main(args):
         if args.mode == 'train':
             model.fit(x, y,
                       batch_size=128,
-                      epochs=1)
+                      epochs=1,
+                      callbacks=[tb])
 
         if generate:
             start_index = random.randint(0, len(text) - maxlen - 1)
